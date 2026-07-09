@@ -1,0 +1,33 @@
+name: OA → SC Daily Sync
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # Runs every day at 01:00 UTC — adjust to suit your timezone
+  workflow_dispatch:        # Allows you to trigger manually from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run sync
+        env:
+          OA_SUBDOMAIN:     ${{ secrets.OA_SUBDOMAIN }}
+          OA_CLIENT_ID:     ${{ secrets.OA_CLIENT_ID }}
+          OA_CLIENT_SECRET: ${{ secrets.OA_CLIENT_SECRET }}
+          OA_REGION:        ${{ secrets.OA_REGION }}
+          SC_API_KEY:       ${{ secrets.SC_API_KEY }}
+          SC_SERVER:        ${{ secrets.SC_SERVER }}
+          SC_ORG_ID:        ${{ secrets.SC_ORG_ID }}
+        run: python sync.py
