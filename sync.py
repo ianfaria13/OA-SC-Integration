@@ -20,6 +20,7 @@ Required environment variables:
 
 import os
 import sys
+import time
 import logging
 import requests
 from datetime import datetime, timezone
@@ -76,6 +77,21 @@ GENDER_MAP = {
     "Non - Binary": "Unspecified",
 }
 
+# ── Rate-limit-aware request helper ──────────────────────────────────────────
+
+def get_with_retry(url: str, headers: dict, params: dict = None, max_retries: int = 5) -> requests.Response:
+    """GET with automatic retry on 429 Too Many Requests."""
+    for attempt in range(max_retries):
+        resp = requests.get(url, headers=headers, params=params, timeout=30)
+        if resp.status_code == 429:
+            wait = int(resp.headers.get("Retry-After", 10)) + 2
+            log.warning(f"Rate limited (429). Waiting {wait}s before retry {attempt + 1}/{max_retries}...")
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp
+    raise Exception(f"Failed after {max_retries} retries due to rate limiting: {url}")
+
 # ── OpenApply helpers ─────────────────────────────────────────────────────────
 
 def oa_get_token() -> str:
@@ -101,7 +117,7 @@ def oa_get_all_students(token: str) -> list[dict]:
     for status in ("enrolled", "withdrawn", "graduated"):
         page = 1
         while True:
-            resp = requests.get(
+            resp = get_with_retry(
                 f"{OA_BASE}/api/v3/students",
                 headers=headers,
                 params={
@@ -111,9 +127,7 @@ def oa_get_all_students(token: str) -> list[dict]:
                     "fields":   "id,first_name,last_name,preferred_name,other_name,"
                                 "grade,gender,status,updated_at,parent_ids",
                 },
-                timeout=30,
             )
-            resp.raise_for_status()
             data  = resp.json()
             batch = data.get("students", [])
             students.extend(batch)
@@ -133,13 +147,11 @@ def oa_get_parents(token: str, parent_ids: set) -> dict[int, dict]:
     parents = {}
     page    = 1
     while True:
-        resp = requests.get(
+        resp = get_with_retry(
             f"{OA_BASE}/api/v3/parents",
             headers=headers,
             params={"per_page": 200, "page": page},
-            timeout=30,
         )
-        resp.raise_for_status()
         data = resp.json()
         for p in data.get("parents", []):
             if p["id"] in parent_ids:
