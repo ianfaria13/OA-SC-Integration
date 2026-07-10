@@ -27,7 +27,8 @@ jobs:
           OA_CLIENT_ID:     ${{ secrets.OA_CLIENT_ID }}
           OA_CLIENT_SECRET: ${{ secrets.OA_CLIENT_SECRET }}
           OA_REGION:        ${{ secrets.OA_REGION }}
-          SC_API_KEY:       ${{ secrets.SC_API_KEY }}
+          SC_CLIENT_ID:     ${{ secrets.SC_CLIENT_ID }}
+          SC_CLIENT_SECRET: ${{ secrets.SC_CLIENT_SECRET }}
           SC_SERVER:        ${{ secrets.SC_SERVER }}
           SC_ORG_ID:        ${{ secrets.SC_ORG_ID }}
         run: python sync.py
