@@ -253,9 +253,10 @@ def sc_create_student(token: str, oa_student: dict) -> dict:
         "firstName": oa_student["first_name"],
         "lastName":  oa_student["last_name"],
         "otherName": oa_student.get("preferred_name") or oa_student.get("other_name"),
-        "grade":     oa_student.get("grade", ""),
+        "grade":     oa_student.get("grade") or "Unknown",
         "gender":    GENDER_MAP.get(oa_student.get("gender", ""), "Unspecified"),
     }
+    log.info(f"  SC payload: {payload}")
     resp = requests.post(
         f"{SC_BASE}/api/v1/Students",
         headers=sc_headers(token),
@@ -263,6 +264,8 @@ def sc_create_student(token: str, oa_student: dict) -> dict:
         json=payload,
         timeout=30,
     )
+    if not resp.ok:
+        log.error(f"  SC error response: {resp.status_code} — {resp.text}")
     resp.raise_for_status()
     return resp.json()
 
